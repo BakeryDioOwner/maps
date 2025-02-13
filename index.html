@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>Mymap</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css">
+    <style>
+        html, body, #container {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+        }
+        .search-container {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+        #search {
+            margin-right: 5px;
+        }
+        #getLocation {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+        #panel {
+            position: fixed;
+            background-color: white;
+            max-height: 90%;
+            overflow-y: auto;
+            top: 10px;
+            right: 10px;
+            width: 280px;
+            padding: 10px;
+            z-index: 100;
+        }
+        .sort-buttons, .category-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .sort-buttons button, .category-buttons button {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        #navigationPanel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
+            background-color: white;
+            padding: 10px;
+            z-index: 100;
+            display: none;
+        }
+        #weatherInfo {
+            margin-top: 10px;
+        }
+        #descriptionModal, #confirmModal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        #descriptionModal .modal-content, #confirmModal .modal-content {
+            background-color: white;
+            margin: 20% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 300px;
+            text-align: center;
+        }
+        .modal-buttons {
+            margin-top: 20px;
+        }
+        .weather {
+            width: 5rem;
+            display: inline-block;
+            padding-left: 0.5rem;
+        }
+        .sharp {
+            height: 1rem;
+            width: 1rem;
+            background-color: white;
+            transform: rotateZ(45deg);
+            box-shadow: 2px 2px 3px rgba(114, 124, 245, .5);
+            position: inherit;
+            margin-left: 10.5rem;
+            margin-top: -6px;
+        }
+        #loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+    </style>
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: '57bf7f0241e3eae0a523426dcce577b4'
+        }
+    </script>
+    <script src="https://webapi.amap.com/loader.js"></script>
+</head>
+<body>
+<div id="container"></div>
+
+<div class="search-container">
+    <input type="text" id="search" placeholder="搜索地点...">
+    <button id="searchButton">搜索</button>
+    <button id="nearbySearchButton">周边搜索</button>
+    <button id="endSearchButton">结束搜索</button>
+</div>
+<button id="getLocation">获取位置</button>
+
+<div id="panel">
+    <div class="sort-buttons">
+        <button id="sortByRating">按评分排序</button>
+        <button id="sortByDistance">按距离排序</button>
+        <button id="sortByComprehensive">综合排序</button>
+    </div>
+    <div class="category-buttons">
+        <button id="filterRestaurant">餐饮</button>
+        <button id="filterHotel">酒店</button>
+        <button id="filterAttraction">名胜古迹</button>
+    </div>
+</div>
+
+<div id="navigationPanel">
+    <div class="route-info">
+        <p>起点：当前位置</p>
+        <p>终点：未知</p>
+        <div class="info">
+            <h4>预报天气</h4><hr>
+            <p id='forecast'></p>
+        </div>
+    </div>
+    <button id="startNavigationButton">开始导航</button>
+    <button id="endNavigationButton">结束导航</button>
+</div>
+
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <p>是否将此点设为终点站？</p>
+        <div class="modal-buttons">
+            <button id="confirmYes">是</button>
+            <button id="confirmNo">否</button>
+        </div>
+    </div>
+</div>
+
+<div id="descriptionModal" class="modal">
+    <div class="modal-content">
+        <h3 id="descriptionTitle"></h3>
+        <p id="descriptionContent"></p>
+        <button id="closeDescriptionModal">关闭</button>
+    </div>
+</div>
+
+<div id="loading">加载中...</div>
+
+<script>
+    var map, placeSearch, driving;
+    var startPoint, endPoint, currentResults = [], currentCategory = 'all', isNavigating = false;
+
+    AMapLoader.load({
+        key: '9655ab1d97c01e675e7045780ebdf7b5',
+        version: '2.0',
+        plugins: ['AMap.Scale', 'AMap.ToolBar', 'AMap.Geocoder', 'AMap.PlaceSearch', 'AMap.Driving', 'AMap.CitySearch', 'AMap.Weather']
+    }).then((AMap) => {
+        // 初始化地图
+        map = new AMap.Map('container', {
+            zoom: 11,
+            center: [116.397428, 39.90923]
+        });
+        map.addControl(new AMap.Scale());
+        map.addControl(new AMap.ToolBar());
+
+        // 初始化 PlaceSearch 和 Driving
+        AMap.plugin(["AMap.PlaceSearch"], function() {
+            placeSearch = new AMap.PlaceSearch({
+                type: '餐饮服务|住宿服务|风景名胜',
+                panel: "panel",
+                map: map,
+                autoFitView: true
+            });
+        });
+
+        driving = new AMap.Driving({
+            map: map,
+            panel: "panel"
+        });
+
+        // 获取当前位置并更新导航面板
+        document.getElementById('getLocation').onclick = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        };
+
+        function showPosition(position) {
+            var lat = position.coords.latitude;
+            var lng = position.coords.longitude;
+            startPoint = {
+                location: [lng, lat]
+            };
+
+            // 更新起点信息
+            document.querySelector("#navigationPanel .route-info p:first-child").innerText = "起点：当前位置";
+
+            // 更新地图中心
+            var marker = new AMap.Marker({
+                position: new AMap.LngLat(lng, lat),
+                map: map
+            });
+            map.setCenter(new AMap.LngLat(lng, lat));
+
+            // 获取天气信息
+            getWeather(lat, lng);
+        }
+
+        function showError(error) {
+            alert("位置获取失败");
+        }
+
+        // 获取天气信息
+        function getWeather(lat, lng) {
+            AMap.plugin('AMap.Weather', function() {
+                var weather = new AMap.Weather();
+                weather.getLive('朝阳区', function(err, data) {
+                    if (!err) {
+                        var str = [];
+                        str.push('<h4>实时天气</h4><hr>');
+                        str.push('<p>城市/区：' + data.city + '</p>');
+                        str.push('<p>天气：' + data.weather + '</p>');
+                        str.push('<p>温度：' + data.temperature + '℃</p>');
+                        str.push('<p>风向：' + data.windDirection + '</p>');
+                        str.push('<p>风力：' + data.windPower + ' 级</p>');
+                        str.push('<p>空气湿度：' + data.humidity + '</p>');
+                        str.push('<p>发布时间：' + data.reportTime + '</p>');
+                        var marker = new AMap.Marker({ map: map, position: map.getCenter() });
+                        var infoWin = new AMap.InfoWindow({
+                            content: '<div class="info" style="position:inherit;margin-bottom:0;">' + str.join('') + '</div><div class="sharp"></div>',
+                            isCustom: true,
+                            offset: new AMap.Pixel(0, -37)
+                        });
+                        infoWin.open(map, marker.getPosition());
+                        marker.on('mouseover', function() {
+                            infoWin.open(map, marker.getPosition());
+                        });
+                    }
+                });
+
+                // 未来4天天气预报
+                weather.getForecast('朝阳区', function(err, data) {
+                    if (err) return;
+                    var str = [];
+                    for (var i = 0, dayWeather; i < data.forecasts.length; i++) {
+                        dayWeather = data.forecasts[i];
+                        str.push(dayWeather.date + ' <span class="weather">' + dayWeather.dayWeather + '</span> ' + dayWeather.nightTemp + '~' + dayWeather.dayTemp + '℃');
+                    }
+                    document.getElementById('forecast').innerHTML = str.join('<br>');
+                });
+            });
+        }
+
+        // 搜索按钮点击事件
+        document.getElementById('searchButton').onclick = function() {
+            var keyword = document.getElementById('search').value;
+            if (!keyword) {
+                alert('请输入搜索关键字');
+                return;
+            }
+            showLoading();
+            placeSearch.search(keyword, function(status, result) {
+                hideLoading();
+                if (status === 'complete' && result.info === 'OK') {
+                    currentResults = result.poiList.pois;
+                    displayResults(currentResults);
+                } else {
+                    alert("没有找到相关地点");
+                }
+            });
+        };
+
+        // 周边搜索
+        document.getElementById('nearbySearchButton').onclick = function() {
+            var keyword = document.getElementById('search').value;
+            var location = map.getCenter();
+            showLoading();
+            placeSearch.searchNearBy(keyword, location, 1000, function(status, result) {
+                hideLoading();
+                if (status === 'complete' && result.info === 'OK') {
+                    currentResults = result.poiList.pois;
+                    displayResults(currentResults);
+                } else {
+                    alert("没有找到相关地点");
+                }
+            });
+        };
+
+        // 结束搜索
+        document.getElementById('endSearchButton').onclick = function() {
+            document.getElementById('panel').innerHTML = '';
+        };
+
+        // 分类按钮点击事件
+        document.getElementById('filterRestaurant').onclick = function() { filterCategory('餐饮'); };
+        document.getElementById('filterHotel').onclick = function() { filterCategory('酒店'); };
+        document.getElementById('filterAttraction').onclick = function() { filterCategory('景点'); };
+
+        function filterCategory(category) {
+            currentCategory = category;
+            var filteredResults = currentResults.filter(function(item) {
+                return item.type && item.type.includes(category);
+            });
+            displayResults(filteredResults);
+        }
+
+        // 显示搜索结果
+        function displayResults(results) {
+            var panel = document.getElementById('panel');
+            panel.innerHTML = '';
+
+            results.forEach(function(item) {
+                var div = document.createElement('div');
+                div.innerHTML = `
+                    <p>${item.name}</p>
+                    <p>${item.address}</p>
+                    <button class="descriptionButton" data-id="${item.id}">查看详情</button>
+                    <button class="navigateButton" data-id="${item.id}">导航</button>
+                `;
+                panel.appendChild(div);
+            });
+
+            document.querySelectorAll('.descriptionButton').forEach(function(button) {
+                button.onclick = function() {
+                    showDescription(this.dataset.id);
+                };
+            });
+
+            document.querySelectorAll('.navigateButton').forEach(function(button) {
+                button.onclick = function() {
+                    startNavigation(this.dataset.id);
+                };
+            });
+        }
+
+        // 显示详细信息
+        function showDescription(id) {
+            var item = currentResults.find(function(result) {
+                return result.id === id;
+            });
+            document.getElementById('descriptionTitle').innerText = item.name;
+            document.getElementById('descriptionContent').innerText = item.address;
+            document.getElementById('descriptionModal').style.display = 'block';
+        }
+
+        document.getElementById('closeDescriptionModal').onclick = function() {
+            document.getElementById('descriptionModal').style.display = 'none';
+        };
+
+        // 开始导航
+        function startNavigation(id) {
+            var item = currentResults.find(function(result) {
+                return result.id === id;
+            });
+            endPoint = { location: item.location };
+            document.getElementById('navigationPanel').style.display = 'block';
+            driving.clear();
+            driving.search(startPoint.location, endPoint.location);
+        }
+
+        document.getElementById('startNavigationButton').onclick = function() {
+            if (!startPoint || !endPoint) {
+                alert("请先选择起点和终点");
+                return;
+            }
+            if (isNavigating) return;
+            driving.search(startPoint.location, endPoint.location);
+            isNavigating = true;
+        };
+
+        document.getElementById('endNavigationButton').onclick = function() {
+            if (driving) {
+                driving.clear();
+                document.getElementById('navigationPanel').style.display = 'none';
+                isNavigating = false;
+            }
+        };
+
+        // 显示加载动画
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        // 隐藏加载动画
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>
