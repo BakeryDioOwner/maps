@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+  <title>周边检索与定位</title>
+  <link rel="stylesheet" href="https://cache.amap.com/lbs/static/main1119.css"/>
+  <style type="text/css">
+    html, body, #container {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #panel {
+      position: fixed;
+      background-color: white;
+      max-height: 90%;
+      overflow-y: auto;
+      top: 10px;
+      right: 10px;
+      width: 280px;
+      border-bottom: solid 1px silver;
+      z-index: 200;
+    }
+    #info-box {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px;
+      width: 300px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+    }
+  </style>
+  <script type="text/javascript">
+    window._AMapSecurityConfig = {
+      securityJsCode: 'f13a622a1616bd4e065b10bb4e1da743'
+    }
+  </script>
+  <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=14b8129c14a90a1e71e1159855a9d88e"></script>
+  <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+</head>
+<body>
+  <div id="container"></div>
+  <div id="panel"></div>
+  <div class="info">
+    <h4 id="status"></h4>
+    <p id="result"></p>
+  </div>
+  <div id="info-box"><strong>周边位置信息：</strong><p id="summary"></p></div>
+  <script type="text/javascript">
+    var map = new AMap.Map('container', { resizeEnable: true });
+    var placeSearch;
+
+    AMap.plugin(["AMap.PlaceSearch"], function() {
+      placeSearch = new AMap.PlaceSearch({
+        type: '餐饮服务|住宿服务|风景名胜',
+        panel: "panel",
+        map: map,
+        autoFitView: true
+      });
+    });
+
+    AMap.plugin('AMap.Geolocation', function() {
+      var geolocation = new AMap.Geolocation({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        position: 'LB',
+        offset: [10, 20],
+        zoomToAccuracy: true
+      });
+      map.addControl(geolocation);
+      geolocation.getCurrentPosition(function(status, result) {
+        if (status === 'complete') {
+          onComplete(result);
+        } else {
+          onError(result);
+        }
+      });
+    });
+
+    function onComplete(data) {
+      document.getElementById('status').innerHTML = '定位成功';
+      var pos = data.position;
+      var str = ['定位结果：' + pos];
+      if (data.accuracy) {
+        str.push('精度：' + data.accuracy + ' 米');
+      }
+      str.push('定位类型：' + data.location_type);
+      document.getElementById('result').innerHTML = str.join('<br>');
+
+      if (placeSearch) {
+        placeSearch.searchNearBy("", pos, 1000, function(searchStatus, searchResult) {
+          if (searchStatus === 'complete' && searchResult && searchResult.poiList &&
+              searchResult.poiList.pois.length > 0) {
+            var pois = searchResult.poiList.pois;
+            
+            // 只保留发送给后端处理的部分
+            sendResultsToAPI(pois);
+          }
+        });
+      }
+    }
+
+    function onError(data) {
+      document.getElementById('status').innerHTML = '定位失败';
+      document.getElementById('result').innerHTML = '错误信息：' + data.message;
+    }
+
+    // 将检索结果发送给 Python 后端进行 AI 处理
+    function sendResultsToAPI(pois) {
+      fetch('http://localhost:5000/process', {  
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ results: pois })
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('summary').innerHTML = `${data.integration}`;
+      })
+      .catch(error => {
+        console.error('发送数据到 API 时发生错误：', error);
+      });
+    }
+  </script>
+</body>
+</html>
