@@ -2,18 +2,21 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="X-UA-Compatible">
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
-  <title>周边检索与定位</title>
+  <title></title>
   <link rel="stylesheet" href="https://cache.amap.com/lbs/static/main1119.css"/>
   <style type="text/css">
-    html, body, #container {
+    html, body, #container 
+    {
       width: 100%;
       height: 100%;
       margin: 0;
       padding: 0;
     }
-    #panel {
+    /* 搜索结果面板 */
+    #panel 
+    {
       position: fixed;
       background-color: white;
       max-height: 90%;
@@ -22,114 +25,139 @@
       right: 10px;
       width: 280px;
       border-bottom: solid 1px silver;
-      z-index: 200;
-    }
-    #info-box {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      background: rgba(255,255,255,0.9);
-      padding: 10px;
-      width: 300px;
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
+      z-index: 200;  /* 提高层级，确保显示在地图控件之上 */
     }
   </style>
   <script type="text/javascript">
-    window._AMapSecurityConfig = {
-      securityJsCode: 'f13a622a1616bd4e065b10bb4e1da743'
+    window._AMapSecurityConfig = 
+    {
+      securityJsCode: '5bbd69f9767c6e4833b04ce384be2e5c'
     }
   </script>
-  <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=14b8129c14a90a1e71e1159855a9d88e"></script>
+  
+  <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=36f2ec85138d4667829cf9bd7459a15b"></script>
+  <!-- 可选：加载工具条脚本 -->
   <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
 </head>
 <body>
+  <!-- 地图容器 -->
   <div id="container"></div>
+  <!-- 周边搜索结果面板 -->
   <div id="panel"></div>
+  <!-- 定位信息展示（新增） -->
   <div class="info">
     <h4 id="status"></h4>
     <p id="result"></p>
   </div>
-  <div id="info-box"><strong>风景名胜介绍：</strong><p id="summary"></p></div>
   <script type="text/javascript">
-    var map = new AMap.Map('container', { resizeEnable: true });
+    // 初始化地图
+    var map = new AMap.Map('container', 
+    {
+      resizeEnable: true
+    });
+    
+    // 声明全局的 placeSearch 对象
     var placeSearch;
-
-    AMap.plugin(["AMap.PlaceSearch"], function() {
-      placeSearch = new AMap.PlaceSearch({
-        type: '餐饮服务|住宿服务|风景名胜',
-        panel: "panel",
-        map: map,
-        autoFitView: true
-      });
-    });
-
-    AMap.plugin('AMap.Geolocation', function() {
-      var geolocation = new AMap.Geolocation({
-        enableHighAccuracy: true,
-        timeout: 10000,
-        position: 'LB',
-        offset: [10, 20],
-        zoomToAccuracy: true
-      });
-      map.addControl(geolocation);
-      geolocation.getCurrentPosition(function(status, result) {
-        if (status === 'complete') {
-          onComplete(result);
-        } else {
-          onError(result);
-        }
-      });
-    });
-
-    function onComplete(data) {
-      document.getElementById('status').innerHTML = '定位成功';
-      var pos = data.position;
-      var str = ['定位结果：' + pos];
-      if (data.accuracy) {
-        str.push('精度：' + data.accuracy + ' 米');
-      }
-      str.push('定位类型：' + data.location_type);
-      document.getElementById('result').innerHTML = str.join('<br>');
-
-      if (placeSearch) {
-        placeSearch.searchNearBy("", pos, 1000, function(searchStatus, searchResult) {
-          if (searchStatus === 'complete' && searchResult && searchResult.poiList &&
-              searchResult.poiList.pois.length > 0) {
-            var pois = searchResult.poiList.pois;
-            for (var i = 0; i < pois.length; i++) {
-              if (pois[i].type.includes("风景名胜")) {
-                fetchWikiInfo(pois[i].name);
-                break;
-              }
-            }
-          }
+    // 加载 PlaceSearch 插件
+    AMap.plugin(["AMap.PlaceSearch"], function() 
+    {
+        placeSearch = new AMap.PlaceSearch(
+        {
+            type: '餐饮服务|住宿服务|风景名胜', // 设置搜索类型
+            panel: "panel",  
+            map: map,     
+            autoFitView: true,
+            extensions: 'all',
+            show_fields: "children, navi, business, photos"  
         });
-      }
-    }
+    });
+    
+    // 加载 Geolocation 插件
+    AMap.plugin('AMap.Geolocation', function() 
+    {
+        var geolocation = new AMap.Geolocation(
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            position: 'LB',
+            offset: [10, 20],
+            zoomToAccuracy: false,
+            showCircle: false
+        });
+        map.addControl(geolocation);
+        geolocation.getCurrentPosition(function(status, result) 
+        {
+            if (status === 'complete') 
+            {
+                onComplete(result);
+            }   
+            else 
+            {
+                onError(result);
+            }
+        });
+    });
+    
+    // 定位成功处理函数
+    function onComplete(data) 
+    {
+        document.getElementById('status').innerHTML = '定位成功';
+        var pos = data.position;
+        var str = [];
+        str.push('定位结果：' + pos);
+        if(data.accuracy)
+        {
+            str.push('精度：' + data.accuracy + ' 米');
+        }
+        str.push('定位类型：' + data.location_type);
+        document.getElementById('result').innerHTML = str.join('<br>');
+      
+        if (placeSearch) 
+        {
+            placeSearch.searchNearBy("", pos, 160, function(searchStatus, searchResult)
+            {
+                if (searchStatus === 'complete' && searchResult.info === 'OK') 
+                {
+                    var pois = searchResult.poiList.pois;
+                    var results = pois.map(function(poi) 
+                    {
+                        return {
+                                name: poi.name,
+                                address: poi.address,
+                                rating: (poi.biz_ext && poi.biz_ext.rating) ? poi.biz_ext.rating : '无评分',
+                                tel: (poi.biz_ext && poi.biz_ext.tel) ? poi.biz_ext.tel : '无特色内容',
+                               };
+                    });
 
-    function onError(data) {
+                    // 按评分排序
+                    results.sort(function(a, b) {
+                        return (b.rating || 0) - (a.rating || 0);
+                    });
+
+                    // 显示结果
+                    var resultHtml = results.map(function(item) 
+                    {
+                        return '<div><strong>' + item.name + '</strong><br>' +
+                                '地址: ' + item.address + '<br>' +
+                                '评分: ' + item.rating + '<br>' +
+                                '特色内容: ' + item.tel + '</div><hr>';
+                    }).join('');
+            
+                    document.getElementById('panel').innerHTML = resultHtml;
+                } 
+        else 
+        {
+            document.getElementById('panel').innerHTML = '未找到相关结果';
+        }
+        });
+        }
+    }
+    // 定位失败处理函数
+    function onError(data) 
+    {
       document.getElementById('status').innerHTML = '定位失败';
       document.getElementById('result').innerHTML = '错误信息：' + data.message;
     }
-
-    function fetchWikiInfo(placeName) {
-      fetch(`https://baike.baidu.com/item/${encodeURIComponent(placeName)}`)
-        .then(response => response.text())
-        .then(html => {
-          var parser = new DOMParser();
-          var doc = parser.parseFromString(html, "text/html");
-          var summary = doc.querySelector(".lemma-summary")?.innerText || "暂无介绍";
-          document.getElementById('summary').innerHTML = `<strong>${placeName}：</strong> ${summary}`;
-        })
-        .catch(error => {
-          console.log(error);
-          document.getElementById('summary').innerHTML = `无法获取 ${placeName} 的介绍`;
-        });
-    }
-  </script>
+</script>
 </body>
 </html>
-
-
