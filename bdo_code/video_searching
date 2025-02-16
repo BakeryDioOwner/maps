@@ -1,0 +1,26 @@
+import requests
+
+   def search_douyin_videos(keyword, access_token):
+       url = "https://open.douyin.com/api/search/video/"
+       headers = {
+           "Authorization": f"Bearer {access_token}"
+       }
+       params = {
+           "keyword": keyword,
+           "count": 10  # 返回的视频数量
+       }
+       response = requests.get(url, headers=headers, params=params)
+       if response.status_code == 200:
+           return response.json()
+       else:
+           return None
+
+   # 使用示例
+   access_token = "your_access_token"
+   keyword = "your_keyword"
+   result = search_douyin_videos(keyword, access_token)
+   if result:
+       for video in result['data']:
+           print(f"视频链接: {video['video_url']}")
+   else:
+       print("搜索失败")

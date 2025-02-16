@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+
+<head>//加载地图完成后触发
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+  <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+  <style>
+    html,
+    body,
+    #container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <title>地图加载完成</title>
+</head>
+
+<body>
+  <div id="container"></div>
+  <script src="https://webapi.amap.com/maps?v=2.0&key=14b8129c14a90a1e71e1159855a9d88e"></script>  //加载地图API并填入你申请的key
+  <script src="https://a.amap.com/jsapi_demos/static/demo-center/js/demoutils.js"></script>
+  <script>
+    var map = map = new AMap.Map('container', {
+        zoom: 11,
+    });
+    
+    map.on("complete", function(){
+       log.success("地图加载完成！");  
+    });
+  </script>
+</body>
+
+</html>
