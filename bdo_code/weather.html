@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VS Code 调试指南</title>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=14b8129c14a90a1e71e1159855a9d88e"></script> 
     <style>
         /* ... 保留原有样式 ... */
         
@@ -23,8 +24,20 @@
             line-height: 1.4;
         }
     </style>
+    <style>
+        /* ... 保留原有样式 ... */
+        #map-container {
+            width: 100%;
+            height: 400px;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
+    <!-- 在 body 中适当位置添加地图容器 -->
+    <div id="map-container"></div>
     <!-- 添加天气信息容器 -->
     <div id="weather-container">
         <div id="weather-info">加载天气信息中...</div>
@@ -68,5 +81,7 @@
         // 每30分钟更新一次天气
         setInterval(getWeather, 30 * 60 * 1000);
     </script>
+    <!-- 在 body 末尾添加我们的地图 JS 文件引用 -->
+    <script src="map.js"></script>
 </body>
 </html>
