@@ -39,7 +39,7 @@
             padding: 10px;
             gap: 15px;
         }
-/* 排序和分类按钮样式 */
+        /* 排序和分类按钮样式 */
 .sort-buttons{
     position: absolute;
     left: 32px;
@@ -86,9 +86,17 @@
         }
     </script>
     <script src="https://webapi.amap.com/loader.js"></script>
+    <script src="https://cdn.mob.com/mob-share/script/mob-share.js"></script>
+    <script src="share.js"></script>
+    <script src="Fsort.js"></script>
 </head>
 <body>
 <div id="container"></div>
+    <!-- 引入 ShareSDK 脚本 -->
+    <button onclick="shareToWechatTimeline()">分享到微信朋友圈</button>
+    <button onclick="shareToQQZone()">分享到QQ空间</button>
+    <button onclick="shareToWeibo()">分享到微博</button>
+    
 <div class="search-container">
     <input type="text" id="search" placeholder="搜索地点...">
     <button id="searchButton">搜索</button>
@@ -117,8 +125,6 @@
     </div>
     
     <!-- 搜索结果将显示在这里 -->
-    
-    <script  src="Fsort.js"></script>
-
 </div>
+
 
