@@ -11,12 +11,18 @@ class MapManager {
         this.map = new AMap.Map('map-container', {
             zoom: 11,
             center: [116.397428, 39.90923], // 北京市中心
-            viewMode: '3D'
+            viewMode: '3D',
+            resizeEnable: true // 启用自动适应容器尺寸
         });
 
         // 添加地图控件
         this.map.addControl(new AMap.Scale());
         this.map.addControl(new AMap.ToolBar());
+
+        // 监听窗口大小变化，自动调整地图大小
+        window.addEventListener('resize', () => {
+            this.map.resize();
+        });
 
         // 初始化定位
         this.initGeolocation();
