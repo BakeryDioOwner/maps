@@ -12,7 +12,7 @@ class VideoSearchManager {
         searchContainer.id = 'video-search-container';
         searchContainer.innerHTML = `
             <div class="search-box">
-                <input type="text" id="search-input" placeholder="搜索视频...">
+                <input type="text" id="search-input" placeholder="搜索地点视频...">
                 <button id="search-button">搜索</button>
             </div>
             <div class="search-provider">结果由bilibili提供</div>
