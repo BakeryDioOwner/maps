@@ -6,79 +6,170 @@
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
     <title>Mymap</title>
     <style>
-            html, body, #container {
+        html, body, #container {
             height: 100%;
             width: 100%;
             margin: 0;
+            padding: 0;
         }
         .search-container {
             position: absolute;
-            top: 50px;
-            left: 10px;
+            top: 20px;
+            left: 20px;
             display: flex;
             align-items: center;
+            z-index: 10;
+            gap: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         #search {
-            margin-right: 5px;
-         }
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+        }
         #getLocation {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 20px;
+            right: 20px;
             z-index: 10;
+            padding: 8px 15px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+        }
+        #getLocation:hover {
+            background-color: #e0e0e0;
         }
         #panel {
             position: fixed;
-            display: flex;
-            background-color: rgb(169, 199, 205);
-            max-height: 90%;
-            overflow-y: auto;
-            top: 100px;
-            right: 10px;
+            top: 80px;
+            right: 20px;
             width: 350px;
-            padding: 10px;
+            background-color: rgba(249, 249, 249, 0.9);
+            max-height: 80%;
+            overflow-y: auto;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
             gap: 15px;
+            z-index: 5;
         }
         /* 排序和分类按钮样式 */
-.sort-buttons{
-    position: absolute;
-    left: 32px;
-    display: flex;
-    gap: 5px;
-}
-.category-buttons{
-
-    position: absolute;
-    right: 32px;
-    display: flex;
-    gap: 5px;
-}
-/* 分页按钮样式 */
-.pagination {
-    margin-top: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-}
-
-.pagination button {
-    padding: 5px 10px;
-    font-size: 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #f9f9f9;
-    cursor: pointer;
-}
-
-.pagination button:hover {
-    background-color: #e0e0e0;
-}
-
-#pageInfo {
-    font-size: 14px;
-    color: #333;
-}
+        .sort-buttons, .category-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+        .sort-buttons button, .category-buttons button {
+            padding: 8px 15px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .sort-buttons button:hover, .category-buttons button:hover {
+            background-color: #e0e0e0;
+        }
+        /* 分页按钮样式 */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .pagination button {
+            padding: 8px 15px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .pagination button:hover {
+            background-color: #e0e0e0;
+        }
+        #pageInfo {
+            font-size: 14px;
+            color: #333;
+        }
+        /* 分享按钮样式 */
+        .share-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+        .share-button {
+            padding: 8px 15px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .share-button:hover {
+            background-color: #e0e0e0;
+        }
+        .share-dropdown {
+            display: none;
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            flex-direction: column;
+            gap: 5px;
+            padding: 5px;
+        }
+        .share-dropdown button {
+            padding: 8px 15px;
+            font-size: 14px;
+            border: none;
+            background-color: transparent;
+            cursor: pointer;
+            text-align: left;
+        }
+        .share-dropdown button:hover {
+            background-color: #e0e0e0;
+        }
+        /* 添加响应式设计 */
+        @media (max-width: 768px) {
+            .search-container {
+                top: 10px;
+                left: 10px;
+                flex-direction: column;
+                gap: 5px;
+                width: calc(100% - 20px);
+            }
+            #search {
+                width: 100%;
+            }
+            #panel {
+                width: 90%;
+                top: 60px;
+                right: 10px;
+            }
+            .share-container {
+                bottom: 10px;
+                left: 10px;
+            }
+        }
     </style>
     <script type="text/javascript">
         window._AMapSecurityConfig = {
@@ -89,25 +180,78 @@
     <script src="https://cdn.mob.com/mob-share/script/mob-share.js"></script>
     <script src="share.js"></script>
     <script src="Fsort.js"></script>
+    <script>
+        // 分享按钮逻辑
+        document.addEventListener('DOMContentLoaded', function () {
+            const shareButton = document.querySelector('.share-button');
+            const shareDropdown = document.querySelector('.share-dropdown');
+
+            // 点击分享按钮显示/隐藏下拉菜单
+            shareButton.addEventListener('click', function (e) {
+                e.stopPropagation(); // 阻止事件冒泡
+                shareDropdown.style.display = shareDropdown.style.display === 'flex' ? 'none' : 'flex';
+            });
+
+            // 点击页面其他区域隐藏下拉菜单
+            document.addEventListener('click', function () {
+                shareDropdown.style.display = 'none';
+            });
+
+            // 阻止下拉菜单点击事件冒泡
+            shareDropdown.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        });
+
+        // 搜索功能逻辑
+        document.getElementById('searchButton').addEventListener('click', function () {
+            const query = document.getElementById('search').value;
+            if (query) {
+                alert(`搜索: ${query}`); // 替换为实际搜索逻辑
+            }
+        });
+
+        document.getElementById('endSearchButton').addEventListener('click', function () {
+            alert('结束搜索'); // 替换为实际结束搜索逻辑
+        });
+
+        // 获取位置逻辑
+        document.getElementById('getLocation').addEventListener('click', function () {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    alert(`纬度: ${position.coords.latitude}, 经度: ${position.coords.longitude}`);
+                });
+            } else {
+                alert('您的浏览器不支持地理定位');
+            }
+        });
+    </script>
 </head>
 <body>
 <div id="container"></div>
-    <!-- 引入 ShareSDK 脚本 -->
-    <button onclick="shareToWechatTimeline()">分享到微信朋友圈</button>
-    <button onclick="shareToQQZone()">分享到QQ空间</button>
-    <button onclick="shareToWeibo()">分享到微博</button>
-    
+
+<!-- 分享按钮 -->
+<div class="share-container">
+    <button class="share-button">分享</button>
+    <div class="share-dropdown">
+        <button onclick="shareToWechatTimeline()">分享到微信朋友圈</button>
+        <button onclick="shareToQQZone()">分享到QQ空间</button>
+        <button onclick="shareToWeibo()">分享到微博</button>
+    </div>
+</div>
+
 <div class="search-container">
     <input type="text" id="search" placeholder="搜索地点...">
     <button id="searchButton">搜索</button>
-    <!-- 新增结束搜索按钮 -->
     <button id="endSearchButton">结束搜索</button>
 </div>
+
 <button id="getLocation">获取位置</button>
+
 <div id="panel">
     <!-- 排序按钮 -->
     <div class="sort-buttons">
-        <button id="sortByRating"> 评分</button>
+        <button id="sortByRating">评分</button>
         <button id="sortByDistance">距离</button>
         <button id="sortByComprehensive">综合</button>
     </div>
@@ -117,7 +261,7 @@
         <button id="filterHotel">酒店</button>
         <button id="filterAttraction">景区</button>
     </div>
-        <!-- 分页按钮 -->
+    <!-- 分页按钮 -->
     <div class="pagination">
         <button id="prevPage">上一页</button>
         <span id="pageInfo">第 1 页</span>
@@ -126,5 +270,7 @@
     
     <!-- 搜索结果将显示在这里 -->
 </div>
+</body>
+</html>
 
 
