@@ -1,12 +1,17 @@
 import requests
 import json
 from datetime import datetime
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-class DeepSeekClient:
+app = Flask(__name__)
+CORS(app)
+
+class GuijiClient:
     def __init__(self):
         self.api_key = "sk-fmybytotkerztuyoxsmodfhdhuetfilxnuxxbsjgryonbgmh"
-        self.api_base = "https://api.deepseek.com/v1"
-        self.model = "deepseek-chat"  # 使用 DeepSeek Chat v3 模型
+        self.api_base = "https://api.guiji.ai/api/v1"
+        self.model = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"  # 使用硅基流动的DeepSeek模型
 
     def create_chat_completion(self, messages, temperature=0.7):
         """
@@ -24,7 +29,9 @@ class DeepSeekClient:
             data = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": temperature
+                "temperature": temperature,
+                "stream": False,
+                "max_tokens": 2000
             }
 
             response = requests.post(
@@ -119,82 +126,26 @@ def save_review(review):
     except Exception as e:
         print(f"\n保存评价时出错: {str(e)}")
 
-def generate_personal_review(client, place_name, user_review):
-    """
-    基于用户评价生成个性化游记
-    :param client: DeepSeek客户端实例
-    :param place_name: 地点名称
-    :param user_review: 用户评价信息
-    :return: 生成的个性化游记
-    """
-    # 构建提示词
-    prompt = f"""
-    请基于以下用户评价，以第一人称的口吻生成一段生动的游记：
+@app.route('/api/place', methods=['POST'])
+def get_place_info():
+    data = request.json
+    place_name = data.get('place')
     
-    地点：{place_name}
-    评分：{user_review['评分']}分
-    优点：{user_review['优点'] or '未提供'}
-    建议：{user_review['建议'] or '未提供'}
-    游玩建议：{user_review['游玩建议'] or '未提供'}
-    其他评价：{user_review['其他评价'] or '未提供'}
-    
-    要求：
-    1. 以"我"的口吻描述
-    2. 融入用户的具体评价内容
-    3. 语言要生动自然
-    4. 控制在200字左右
-    5. 突出个人体验和感受
-    """
-
-    messages = [
-        {"role": "system", "content": "你是一位擅长写游记的旅行作家。"},
-        {"role": "user", "content": prompt}
-    ]
-
-    response = client.create_chat_completion(messages)
-    
-    if response:
-        return response['choices'][0]['message']['content']
-    else:
-        return "抱歉，无法生成个性化游记。"
-
-def main():
-    client = DeepSeekClient()
-    
-    print("欢迎使用地点介绍系统！")
-    print("输入'quit'退出程序\n")
-
-    while True:
-        place = input("\n请输入您想了解的地点名称: ").strip()
+    if not place_name:
+        return jsonify({'error': '地点名称不能为空'}), 400
         
-        if place.lower() == 'quit':
-            print("感谢使用，再见！")
-            break
-        
-        if not place:
-            print("地点名称不能为空，请重新输入。")
-            continue
+    client = GuijiClient()
+    description = get_place_description(client, place_name)
+    
+    return jsonify({
+        'description': description
+    })
 
-        # 获取并显示地点介绍
-        print("\n正在生成介绍...")
-        description = get_place_description(client, place)
-        print("\n" + "="*50)
-        print(f"\n关于 {place} 的介绍：\n")
-        print(description)
-        print("\n" + "="*50)
-
-        # 询问是否要提供评价
-        if input("\n您想对这个地点提供评价吗？(y/n): ").lower().strip() == 'y':
-            review = collect_user_review(place)
-            save_review(review)
-            
-            # 生成并显示个性化游记
-            print("\n正在基于您的评价生成个性化游记...")
-            personal_review = generate_personal_review(client, place, review)
-            print("\n" + "="*50)
-            print("\n您的个性化游记：\n")
-            print(personal_review)
-            print("\n" + "="*50)
+@app.route('/api/review', methods=['POST'])
+def submit_review():
+    review_data = request.json
+    save_review(review_data)
+    return jsonify({'message': '评价已保存'})
 
 if __name__ == "__main__":
-    main()
+    app.run(port=5000)
